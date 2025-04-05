@@ -1,2 +1,6 @@
+# folder
 dump
 ui
+
+# large data
+train_data.csv
