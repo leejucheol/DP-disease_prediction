@@ -4,6 +4,7 @@
 
 ```
 pip install torch
+pip install torch_geometric
 ```
 
 **1. fastapi 디렉토리로 이동**
