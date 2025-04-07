@@ -66,7 +66,7 @@ class ProteinDiseasePredictor:
 
         # 피처 정리
         numerical_features = ['sequence_length', 'go_term_count', 'pubmed_count', 'globalMetricValue',
-                              'ppi_degree', 'ppi_avg_score', 'pdb_count', 'gene_disease_count']
+                                'ppi_degree', 'ppi_avg_score', 'pdb_count', 'gene_disease_count']
         scaler = StandardScaler()
         scaled_numerical = scaler.fit_transform(df[numerical_features])
 
@@ -93,7 +93,7 @@ class ProteinDiseasePredictor:
         y = torch.tensor([1 if prot in labeled_proteins else 0 for prot in all_proteins], dtype=torch.long)
         self.data = Data(x=x, edge_index=edge_index, y=y)
 
-    def train(self, heads=1, hidden_channels=64, epochs=100, lr=0.01):
+    def train(self, hidden_channels=64, epochs=100, lr=0.01):
         data = self.data
         idx = list(range(data.num_nodes))
         train_idx, test_idx = train_test_split(idx, test_size=0.2, stratify=data.y, random_state=42)
@@ -108,7 +108,7 @@ class ProteinDiseasePredictor:
 
         in_channels = data.num_node_features
         out_channels = len(torch.unique(data.y))
-        model = GAT(in_channels, hidden_channels, out_channels, heads=heads)
+        model = GAT(in_channels, hidden_channels, out_channels)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         loss_fn = nn.CrossEntropyLoss()
 
@@ -129,7 +129,7 @@ class ProteinDiseasePredictor:
 
 
 # 실행 예시
-# predictor = ProteinDiseasePredictor("train_data_small.csv")
-# predictor.preprocess_data()
-# predictor.train(heads=1)
+predictor = ProteinDiseasePredictor("./data/train_data_small.csv")
+predictor.preprocess_data()
+predictor.train()
 
