@@ -26,7 +26,7 @@ class Main:
     @staticmethod
     def load_data(path='./data/train_data.csv'):
         df = pd.read_csv(path)
-        print(f"✅ 데이터 로드 성공, 데이터 크기: {df.shape}")
+        print(f">>> 데이터 로드 성공, 데이터 크기: {df.shape}")
         return df
 
     @staticmethod
@@ -59,7 +59,7 @@ class Main:
         model = GCN(num_node_features=x.shape[1], hidden_channels=64, num_classes=10)
         out = model(x, edge_index)
 
-        print("📦 출력 크기:", out.shape)
+        print(">>> 출력 크기:", out.shape)
 
 
 if __name__ == "__main__":

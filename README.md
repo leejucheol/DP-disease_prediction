@@ -123,3 +123,18 @@ GCN은 단순한 연결 유무가 아닌, **“누가 누구와 어떻게 연결
 | `protein_existence`            | 단백질 존재 근거 (1~5 등급)       | 신뢰도 판단                   |
 | `sequence_version`             | 시퀀스 버전 정보                  | 변경 이력 추적용              |
 | `sequence`                     | 아미노산 서열 정보                | 단백질 기능 예측의 핵심       |
+
+### 디렉토리 구조
+
+```
+docs
+fastapi
+    - data
+        - raw
+            - train_data_small.csv
+            - train_data.csv # 이건 개인적으로 추가(크기가 커서 안올라감)
+        - train_data_small.csv
+        - train_data.csv # 이건 개인적으로 추가(크기가 커서 안올라감)
+    - models
+ui
+```
