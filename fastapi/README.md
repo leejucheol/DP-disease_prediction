@@ -7,14 +7,14 @@ pip install torch
 pip install torch_geometric
 ```
 
-**1. fastapi 디렉토리로 이동**
+**1. 현재 위치가 fastapi가 아니라면 fastapi 디렉토리로 이동**
 
 ```
 cd fastapi
 ```
 
-**2. 모델 실행**
+**2. raw 데이터 전처리 실행**
 
 ```
-python models/gat.py
+python src/preprocessor.py
 ```
