@@ -9,8 +9,8 @@ def processing_protein_and_save(df):
     df["protein1"] = df["protein1"].str.replace("9606.", "", regex=False)
     df["protein2"] = df["protein2"].str.replace("9606.", "", regex=False)
 
-# df, main_path: 드롭 후 최종 테이블 저장 경로)
-def delete_columns_and_save(df, main_path):
+# df, main_path: 드롭 후 최종 테이블 저장 경로
+def delete_columns_and_save(df, main_path, small_sample_path=None):
     # 삭제할 컬럼들 정의
     cols_to_drop = [
         'PubMed_IDs', 'entryId', 'sequenceChecksum', 'sequenceVersionDate',
@@ -39,6 +39,17 @@ def delete_columns_and_save(df, main_path):
     print(f"main columns shape: {df_main.shape}")
 
     df_main.to_csv(main_path, index=False)
-    print("데이터가 모두 저장되었습니다.")
+    print(f"✅ 전체 데이터 저장 완료: {main_path}")
 
-delete_columns_and_save(train_data, main_path="./data/processed_train.csv")
+    # 무작위 1% 샘플 저장
+    if small_sample_path:
+        df_small = df_main.sample(frac=0.01, random_state=42)
+        df_small.to_csv(small_sample_path, index=False)
+        print(f"✅ 무작위 1% 샘플 저장 완료: {small_sample_path}")
+
+# 실행
+delete_columns_and_save(
+    train_data,
+    main_path="./data/processed_train.csv",
+    small_sample_path="./data/processed_train_small.csv"
+)

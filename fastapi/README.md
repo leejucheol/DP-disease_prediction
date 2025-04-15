@@ -5,6 +5,13 @@
 ```
 pip install torch
 pip install torch_geometric
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+pip install torch-scatter -f https://data.pyg.org/whl/torch-2.0.0+cpu.html
+pip install torch-sparse -f https://data.pyg.org/whl/torch-2.0.0+cpu.html
+pip install torch-cluster -f https://data.pyg.org/whl/torch-2.0.0+cpu.html
+pip install torch-spline-conv -f https://data.pyg.org/whl/torch-2.0.0+cpu.html
+pip install torch-geometric
+pip install fair-esm
 ```
 
 **1. 현재 위치가 fastapi가 아니라면 fastapi 디렉토리로 이동**
