@@ -6,21 +6,20 @@ from torch_geometric.data import Data
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
-
 def load_data(path: str):
     try:
         df = pd.read_csv(path)
-        if df.empty:
-            print(">>> 데이터 비어있음.")
-        else:
-            print("✅ 데이터 로드 성공.")
-            print(f">>> 데이터 크기: {df.shape}")
-            print(f">>> 데이터 컬럼: {df.columns}\n")
-            return df
-    except:
-        print(">>> ERROR: 데이터를 불러올 수 없음.")
-        
-df = load_data("./data/processed_train.csv")
+        print(f"✅ 데이터 로드 성공: {df.shape}")
+        return df
+    except Exception as e:
+        print(f"❌ 파일 읽기 실패: {e}")
+        return None
+
+# 파일 경로
+path = "./data/processed_train_small.csv"
+
+# 파일 읽기
+df = load_data(path)
 
 # 매핑 테이블 생성
 id_map = df[['UniProt_ID', 'protein1']].dropna().drop_duplicates()
@@ -139,6 +138,7 @@ print("📦 병합된 x 전체 shape:", x.shape)               # 예: (N, 1321)
 expected = go_features.shape[1] + has_structure.shape[1] + esm_features.shape[1]
 print("🔍 총 피처 차원 일치 여부:", x.shape[1] == expected)
 
+# --------------------------------------------------------------------------
 from sklearn.preprocessing import MultiLabelBinarizer
 import torch
 import numpy as np
@@ -158,7 +158,7 @@ y = torch.tensor(y_multilabel, dtype=torch.float)
 
 # 4️⃣ 질병 인덱스 → 질병 ID 매핑
 idx_to_disease = {i: d for i, d in enumerate(mlb.classes_)}
-disease_to_idx = {d: i for i, d in enumerate(mlb.classes_)}  # optional
+disease_to_idx = {d: i for i, d in enumerate(mlb.classes_)}
 
 # ✅ 확인
 print("y shape:", y.shape)
@@ -166,28 +166,10 @@ print("라벨이 있는 단백질 수:", y.sum(dim=1).nonzero().size(0))
 print("예시 idx_to_disease:", dict(list(idx_to_disease.items())[:5]))
 
 # --------------------------------------------------
-# GAT 모델 정의 부분 
+# GCN 모델 정의 부분 
 # --------------------------------------------------
 
 from torch_geometric.data import Data
-
-y_multi = torch.zeros((len(proteins), len(disease_ids)))
-for i, prot in enumerate(proteins):
-    related_diseases = df[df['UniProt_ID'] == prot]['Disease ID'].dropna().unique()
-    for d in related_diseases:
-        if d in disease_to_idx:
-            y_multi[i][disease_to_idx[d]] = 1
-
-# x_tensor, edge_index, y_multi는 이미 앞에서 만들었다고 가정
-data = Data(
-    x=x_tensor,                  # 노드 특성 (GO + PDB + ESM 임베딩)
-    edge_index=edge_index,      # 단백질 간 엣지
-    y=y_multi                   # 단백질 → 질병 다중 라벨 (0/1)
-)
-
-# 질병 단백질 ID 목록 추출
-# labeled_proteins = set(df['uniprotAccession'].dropna().unique())
-
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
@@ -209,6 +191,19 @@ class GCN_MultiLabel(nn.Module):
 # ✅ 라벨 생성 (multi-label): 단백질 → 질병 매핑 (0/1)
 disease_ids = sorted(df['Disease ID'].dropna().unique().tolist())
 disease_to_idx = {d: i for i, d in enumerate(disease_ids)}
+
+y_multi = torch.zeros((len(proteins), len(disease_ids)))
+for i, prot in enumerate(proteins):
+    related_diseases = df[df['UniProt_ID'] == prot]['Disease ID'].dropna().unique()
+    for d in related_diseases:
+        if d in disease_to_idx:
+            y_multi[i][disease_to_idx[d]] = 1
+
+data = Data(
+    x=x_tensor,          # 노드 특성
+    edge_index=edge_index,  # 엣지
+    y=y_multi            # 라벨 (multi-label)
+)
 
 # 노드 인덱스 기준으로 train/test 나누기
 idx = list(range(data.num_nodes))
