@@ -26,7 +26,7 @@ def load_data(path: str):
     except:
         print(">>> ERROR: 데이터를 불러올 수 없음.")
 
-df = load_data("./data/processed_train_small.csv")
+df = load_data("./data/processed_train.csv")
 
 # 각 단백질 ID (protein1)와 UniProt_ID 매핑 테이블
 protein_to_uniprot = df[['protein1', 'UniProt_ID']].dropna().drop_duplicates()
