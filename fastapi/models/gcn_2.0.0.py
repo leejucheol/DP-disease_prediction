@@ -6,7 +6,21 @@ from torch_geometric.data import Data
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
-df = pd.read_csv("/content/drive/MyDrive/Colab Notebooks/DP/bio_datas/processed_train_small.csv")
+
+def load_data(path: str):
+    try:
+        df = pd.read_csv(path)
+        if df.empty:
+            print(">>> 데이터 비어있음.")
+        else:
+            print("✅ 데이터 로드 성공.")
+            print(f">>> 데이터 크기: {df.shape}")
+            print(f">>> 데이터 컬럼: {df.columns}\n")
+            return df
+    except:
+        print(">>> ERROR: 데이터를 불러올 수 없음.")
+        
+df = load_data("./data/processed_train.csv")
 
 # 매핑 테이블 생성
 id_map = df[['UniProt_ID', 'protein1']].dropna().drop_duplicates()
@@ -163,7 +177,7 @@ for i, prot in enumerate(proteins):
     for d in related_diseases:
         if d in disease_to_idx:
             y_multi[i][disease_to_idx[d]] = 1
-            
+
 # x_tensor, edge_index, y_multi는 이미 앞에서 만들었다고 가정
 data = Data(
     x=x_tensor,                  # 노드 특성 (GO + PDB + ESM 임베딩)
