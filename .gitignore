@@ -1,6 +1,9 @@
-# folder
+# folders
 dump
 ui
+
+#files
+.env
 
 # large data
 train_data.csv
