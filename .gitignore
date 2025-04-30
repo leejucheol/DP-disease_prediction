@@ -5,6 +5,12 @@ ui
 #files
 .env
 
+# dump files
+t.py
+tt.py
+ttt.py
+tttt.py
+
 # large data
 train_data.csv
 processed_train.csv
