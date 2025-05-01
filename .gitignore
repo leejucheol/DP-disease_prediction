@@ -1,6 +1,8 @@
 # folders
 dump
-ui
+
+# cache folder
+__pycache__
 
 #files
 .env

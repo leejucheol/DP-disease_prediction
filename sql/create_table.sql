@@ -79,3 +79,6 @@ CREATE TABLE protein_alias (
     FOREIGN KEY (uniprot_id) REFERENCES protein(uniprot_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+SELECT * FROM disease;
+SELECT * FROM protein;
+SELECT * FROM pdb_structure;

@@ -85,7 +85,7 @@
 ### 4.1. 디렉토리 구조
 
 -   `docs` : 프로젝트 문서와 참고 자료
--   `fastapi` : API 서버 관련 코드, 데이터 파일(`train_data_small.csv`, `train_data.csv`) 포함
+-   `model-server` : API 서버 관련 코드, 데이터 파일(`train_data_small.csv`, `train_data.csv`) 포함
 -   `models` : 학습된 모델 코드 및 체크포인트 관리
 -   `ui` : 사용자 인터페이스 관련 코드
 
