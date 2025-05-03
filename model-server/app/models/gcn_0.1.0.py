@@ -8,144 +8,269 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torch.nn import BCELoss
 from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+import esm
 
-# 1️⃣ CSV 읽기
-df = pd.read_csv("./data/processed_train.csv")
-print(f"✅ 데이터 로드 성공: {df.shape}")
+# 1. 데이터 로드
+# model-server/ 위치에서 python gcn_0.1.0.py 실행할 경우 상대 경로
+df = pd.read_csv("./app/models/data/processed_train_small.csv")
 
-# 2️⃣ 노드 목록 추출
-proteins = sorted(set(df["protein1"]) | set(df["protein2"]) | set(df["UniProt_ID"]))
-diseases = sorted(df["Disease ID"].dropna().unique())
-print(f"✅ 단백질 노드 개수: {len(proteins)}, 질병 노드 개수: {len(diseases)}")
+# 1. 모델 로드
+esm_model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
+batch_converter = alphabet.get_batch_converter()
 
-# 3️⃣ 노드 → 정수 인덱스 매핑
-protein_encoder = LabelEncoder().fit(proteins)
-disease_encoder = LabelEncoder().fit(diseases)
-num_proteins, num_diseases = len(proteins), len(diseases)
-num_nodes = num_proteins + num_diseases
-print(f"✅ 전체 노드 수: {num_nodes}")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+esm_model = esm_model.to(device)
+esm_model.eval()
 
-def to_node_idx(id_, is_protein=True):
-    if is_protein:
-        return int(protein_encoder.transform([id_])[0])
-    else:
-        return num_proteins + int(disease_encoder.transform([id_])[0])
+df.columns
 
-# 4️⃣ 엣지 리스트 생성
-ppi_edges = df[["protein1","protein2"]].dropna().drop_duplicates().values
-ppi_index_list = (
-    [[to_node_idx(u,True), to_node_idx(v,True)] for u,v in ppi_edges] +
-    [[to_node_idx(v,True), to_node_idx(u,True)] for u,v in ppi_edges]
-)
-ppi_edge_index = torch.tensor(ppi_index_list, dtype=torch.long).t().contiguous()
-print(f"✅ PPI edge_index shape: {ppi_edge_index.shape}")
+# 20개 아미노산 → one-hot 인덱싱용 딕셔너리
+AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
+AA_TO_IDX = {aa: i for i, aa in enumerate(AMINO_ACIDS)}
 
-assoc = df[["UniProt_ID","Disease ID"]].dropna().drop_duplicates().values
-assoc_index_list = (
-    [[to_node_idx(p,True), to_node_idx(d,False)] for p,d in assoc] +
-    [[to_node_idx(d,False), to_node_idx(p,True)] for p,d in assoc]
-)
-assoc_edge_index = torch.tensor(assoc_index_list, dtype=torch.long).t().contiguous()
-print(f"✅ Association edge_index shape: {assoc_edge_index.shape}")
+# 서열을 그래프로 나타낸다 esm 임베딩해서
+def sequence_to_graph_with_esm(seq, esm_model, batch_converter, device):
+    seq = seq.strip().upper()
+    batch = [("protein", seq)]
+    _, _, tokens = batch_converter(batch)
 
-# 5️⃣ 노드 특성 준비 (더미)
-x = torch.ones((num_nodes, 1), dtype=torch.float)
-print(f"✅ Node feature matrix x shape: {x.shape}")
+    with torch.no_grad():
+        tokens = tokens.to(device)
+        results = esm_model(tokens, repr_layers=[6], return_contacts=False)
+        token_embeddings = results["representations"][6][0, 1:-1]  # exclude CLS, EOS
+        x = token_embeddings.cpu()
 
-# 6️⃣ Data 객체 생성
-edge_index = torch.cat([ppi_edge_index, assoc_edge_index], dim=1)
-data = Data(x=x, edge_index=edge_index)
-print(f"✅ Data 객체: num_nodes={data.num_nodes}, num_edges={data.num_edges}")
+    edge_index = torch.tensor(
+        [[i, i+1] for i in range(len(seq) - 1)] + [[i+1, i] for i in range(len(seq) - 1)],
+        dtype=torch.long
+    ).t()
 
-# 7️⃣ GCN 모델 정의
-class ProteinDiseaseGCN(torch.nn.Module):
-    def __init__(self, in_feats, hidden, out_feats):
+    return Data(x=x, edge_index=edge_index)
+
+# uniprotid와 질병 아이디 그룹화 질병 아이디를 y로 두고
+from sklearn.preprocessing import MultiLabelBinarizer
+
+df = df.drop('UniProt_ID', axis=1)
+
+def generate_labels(df):
+    grouped = df.groupby("sequence")["Disease ID"].apply(
+        lambda x: list(set(x.dropna()))
+    ).reset_index()
+    mlb = MultiLabelBinarizer()
+    y = mlb.fit_transform(grouped["Disease ID"])
+    # label_map의 value를 torch.tensor로 저장 (float, 1D)
+    label_map = {uid: torch.tensor(y_row, dtype=torch.float) for uid, y_row in zip(grouped["sequence"], y)}
+    return label_map, mlb
+
+def build_graph_dataset_with_esm(df, esm_model, batch_converter, device):
+    from torch_geometric.data import Data
+    import numpy as np
+
+    label_map, mlb = generate_labels(df)
+    data_list = []
+
+    uids, embeddings = [], []
+
+    for row in df[["sequence"]].drop_duplicates().itertuples():
+        seq = row.sequence
+        uid = seq
+        if not isinstance(seq, str) or len(seq) < 5:
+            continue
+        try:
+            g = sequence_to_graph_with_esm(seq, esm_model, batch_converter, device)
+            uids.append(uid)
+            embeddings.append(g.x.cpu().numpy())
+        except Exception as e:
+            print(f"❌ ESM 실패: {uid} | {e}")
+
+    for uid, emb in zip(uids, embeddings):
+        try:
+            x = torch.tensor(emb, dtype=torch.float)
+            edge_index = torch.tensor(
+                [[i, i + 1] for i in range(len(emb) - 1)] + [[i + 1, i] for i in range(len(emb) - 1)],
+                dtype=torch.long
+            ).t()
+
+            g = Data(x=x, edge_index=edge_index)
+            g.uid = uid
+
+            if uid in label_map:
+                g.y = torch.tensor(label_map[uid], dtype=torch.float).unsqueeze(0)  # (1, C)
+            else:
+                g.y = torch.zeros(1, len(mlb.classes_), dtype=torch.float)
+
+
+
+            data_list.append(g)
+
+        except Exception as e:
+            print(f"❌ 그래프 실패: {uid} | {e}")
+
+    return data_list, mlb
+
+from sklearn.model_selection import train_test_split
+from torch_geometric.loader import DataLoader
+
+uids = df["sequence"].unique()
+train_ids, test_ids = train_test_split(uids, test_size=0.2, random_state=42)
+train_df = df[df["sequence"].isin(train_ids)].copy()
+test_df = df[df["sequence"].isin(test_ids)].copy()
+
+drop_cols = ["Entry_Name", "proteinFullNames", "PDB_IDs", "Gene ID"]
+train_df.drop(columns=[col for col in drop_cols if col in train_df.columns], inplace=True)
+test_df.drop(columns=[col for col in drop_cols if col in test_df.columns], inplace=True)
+
+train_data_list, mlb = build_graph_dataset_with_esm(train_df, esm_model, batch_converter, device)
+test_data_list, _ = build_graph_dataset_with_esm(test_df, esm_model, batch_converter, device)
+
+train_loader = DataLoader(train_data_list, batch_size=16, shuffle=True)
+test_loader = DataLoader(test_data_list, batch_size=16, shuffle=False)
+
+batch = next(iter(DataLoader(train_data_list, batch_size=16)))
+print(batch.y.shape)  # ✅ 반드시 (16, C) 나와야 정상
+
+"""# 모델 학습 및 예측
+## 모델 정의
+"""
+
+from torch_geometric.nn import GCNConv, global_mean_pool
+import torch.nn.functional as F
+
+class ProteinGCN(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels):
         super().__init__()
-        self.conv1 = GCNConv(in_feats, hidden)
-        self.conv2 = GCNConv(hidden, out_feats)
-    def forward(self, data):
-        h = F.relu(self.conv1(data.x, data.edge_index))
-        return self.conv2(h, data.edge_index)
+        self.conv1 = GCNConv(in_channels, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.fc = torch.nn.Linear(hidden_channels, out_channels)
 
-model = ProteinDiseaseGCN(in_feats=1, hidden=64, out_feats=32)
-with torch.no_grad():
-    z = model(data)
-print(f"✅ 초기 forward 완료: node embedding shape {z.shape}")
+    def forward(self, x, edge_index, batch):
+        x = F.relu(self.conv1(x, edge_index))
+        x = F.relu(self.conv2(x, edge_index))
+        x = global_mean_pool(x, batch)
+        return self.fc(x)
 
-# 8️⃣ 링크 예측용 Data split (split_labels=True 중요)
-transform = RandomLinkSplit(
-    num_val=0.1,
-    num_test=0.1,
-    is_undirected=True,
-    add_negative_train_samples=True,
-    split_labels=True,        # ← pos/neg를 분리
-    key='edge_label',
+num_disease_classes = len(mlb.classes_)
+model = ProteinGCN(in_channels=320, hidden_channels=64, out_channels=num_disease_classes)
+
+print("질병 클래스 수:", num_disease_classes)
+
+from torch_geometric.loader import DataLoader
+import torch.nn as nn
+
+num_disease_classes = len(mlb.classes_)
+model = ProteinGCN(in_channels=320, hidden_channels=64, out_channels=num_disease_classes).to(device)
+
+criterion = nn.BCEWithLogitsLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+def train(model, loader, optimizer, criterion, device, epoch):
+    model.train()
+    total_loss = 0
+
+    for i, batch in enumerate(loader):
+        try:
+            batch = batch.to(device)
+            optimizer.zero_grad()
+
+            # 모델 예측
+            out = model(batch.x, batch.edge_index, batch.batch)
+
+            # 디버그용 shape 출력
+            if epoch == 0 and i == 0:  # 첫 에폭 첫 배치만 확인
+                print(f"🧪 Batch {i+1}")
+                print("✅ out.shape:", out.shape)
+                print("✅ y.shape:", batch.y.shape)
+
+            # 손실 계산 및 역전파
+            loss = criterion(out, batch.y)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+
+        except Exception as e:
+            print(f"❌ Batch {i+1} 실패: {e}")
+
+    return total_loss / len(loader)
+
+from sklearn.metrics import f1_score
+
+# ✅ 평가 함수
+def evaluate(model, loader, device):
+    model.eval()
+    y_true_list, y_pred_list = [], []
+
+    with torch.no_grad():
+        for batch in loader:
+            batch = batch.to(device)
+            out = model(batch.x, batch.edge_index, batch.batch)
+            probs = torch.sigmoid(out)
+
+            # ⚠️ 반드시 2D 텐서로 append
+            y_true_list.append(batch.y.view(probs.shape).detach().cpu())
+            y_pred_list.append((probs > 0.5).detach().cpu())
+
+    y_true = torch.cat(y_true_list, dim=0).numpy()
+    y_pred = torch.cat(y_pred_list, dim=0).numpy()
+
+    print(f"✅ y_true shape: {y_true.shape}")
+    print(f"✅ y_pred shape: {y_pred.shape}")
+    return y_true, y_pred
+
+print(f"📦 학습 데이터 수: {len(train_data_list)}")
+print(f"📦 배치 수: {len(train_loader)}")
+
+# 하나 꺼내서 shape 확인
+sample_batch = next(iter(train_loader))
+print(f"✅ sample y shape: {sample_batch.y.shape}")
+print(f"✅ sample x shape: {sample_batch.x.shape}")
+
+num_epochs = 100
+for epoch in range(num_epochs):
+    loss = train(model, train_loader, optimizer, criterion, device, epoch)
+    print(f"Epoch {epoch+1}/{num_epochs} | Loss: {loss:.4f}")
+
+def predict_top5_diseases(sequence, model, esm_model, batch_converter, mlb, device="cpu"):
+    # 1. 단백질 서열 → ESM 임베딩 → 그래프 변환
+    graph = sequence_to_graph_with_esm(sequence, esm_model, batch_converter, device)
+    graph.batch = torch.zeros(graph.num_nodes, dtype=torch.long).to(device)
+
+    # 2. 모델 추론
+    model.eval()
+    with torch.no_grad():
+        out = model(graph.x, graph.edge_index, graph.batch)
+        probs = torch.sigmoid(out).cpu().numpy().flatten()
+
+    # 3. 상위 5개 인덱스 추출 (확률 내림차순)
+    top5_idx = probs.argsort()[-10:][::-1]
+    top5_diseases = [mlb.classes_[i] for i in top5_idx]
+    return top5_diseases
+
+input_sequence = "MRSKARARKLAKSDGDVVNNMYEPNRDLLASHSAEDEAEDSAMSPIPVGPPSPFPTSEDFTPKEGSPYEAPVYIPEDIPIPADFELRESSIPGAGLGVWAKRKMEAGERLGPCVVVPRAAAKETDFGWEQILTDVEVSPQEGCITKISEDLGSEKFCVDANQAGAGSWLKYIRVACSCDDQNLTMCQISEQIYYKVIKDIEPGEELLVHVKEGVYPLGTVPPGLDEEPTFRCDECDELFQSKLDLRRHKKYTCGSVGAALYEGLAEELKPEGLGGGSGQAHECKDCERMFPNKYSLEQHMVIHTEEREYKCDQCPKAFNWKSNLIRHQMSHDSGKRFECENCVKVFTDPSNLQRHIRSQHVGARAHACPDCGKTFATSSGLKQHKHIHSTVKPFICEVCHKSYTQFSNLCRHKRMHADCRTQIKCKDCGQMFSTTSSLNKHRRFCEGKNHYTPGGIFAPGLPLTPSPMMDKAKPSPSLNHASLGFNEYFPSRPHPGSLPFSTAPPTFPALTPGFPGIFPPSLYPRPPLLPPTSLLKSPLNHTQDAKLPSPLGNPALPLVSAVSNSSQGTTAAAGPEEKFESRLEDSCVEKLKTRSSDMSDGSDFEDVNTTTGTDLDTTTGTGSDLDSDVDSDPDKDKGKGKSAEGQPKFGGGLAPPGAPNSVAEVPVFYSQHSFFPPPDEQLLTATGAAGDSIKAIASIAEKYFGPGFMGMQEKKLGSLPYHSAFPFQFLPNFPHSLYPFTDRALAHNLLVKAEPKSPRDALKVGGPSAECPFDLTTKPKDVKPILPMPKGPSAPASGEEQPLDLSIGSRARASQNGGGREPRKNHVYGERKLGAGEGLPQVCPARMPQQPPLHYAKPSPFFMDPIYSRVEKRKVTDPVGALKEKYLRPSPLLFHPQMSAIETMTEKLESFAAMKADSGSSLQPLPHHPFNFRSPPPTLSDPILRKGKERYTCRYCGKIFPRSANLTRHLRTHTGEQPYRCKYCDRSFSISSNLQRHVRNIHNKEKPFKCHLCNRCFGQQTNLDRHLKKHEHENAPVSQHPGVLTNHLGTSASSPTSESDNHALLDEKEDSYFSEIRNFIANSEMNQASTRTEKRADMQIVDGSAQCPGLASEKQEDVEEEDDDDLEEDDEDSLAGKSQDDTVSPAPEPQAAYEDEEDEEPAASLAVGFDHTRRCAEDHEGGLLALEPMPTFGKGLDLRRAAEEAFEVKDVLNSTLDSEALKHTLCRQAKNQAYAMMLSLSEDTPLHTPSQGSLDAWLKVTGATSESGAFHPINHL"
+
+top5 = predict_top5_diseases(
+    input_sequence, model, esm_model, batch_converter, mlb, device
 )
-train_data, val_data, test_data = transform(data)
 
-print(f"✅ Train pos edges: {train_data.pos_edge_label_index.size(1)}, "
-        f"neg edges: {train_data.neg_edge_label_index.size(1)}")
-print(f"   Val   pos edges: {val_data.pos_edge_label_index.size(1)}, "
-        f"neg edges: {val_data.neg_edge_label_index.size(1)}")
-print(f"   Test  pos edges: {test_data.pos_edge_label_index.size(1)}, "
-        f"neg edges: {test_data.neg_edge_label_index.size(1)}")
+disease_id_to_name = dict(zip(df['Disease ID'], df['Disease Name']))
 
-# 9️⃣ LinkPredictor 정의
-class LinkPredictor(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels):
-        super().__init__()
-        self.lin1 = torch.nn.Linear(in_channels * 2, hidden_channels)
-        self.lin2 = torch.nn.Linear(hidden_channels, 1)
-    def forward(self, z, edge_index):
-        src, dst = edge_index
-        h = torch.cat([z[src], z[dst]], dim=1)
-        h = F.relu(self.lin1(h))
-        return torch.sigmoid(self.lin2(h)).view(-1)
+print("📌 입력 서열:", input_sequence)
+print("📌 상위 5개 예측 질병:")
+for i, disease in enumerate(top5, 1):
+    print(f"{i}. {disease}")
 
-pred_head = LinkPredictor(in_channels=32, hidden_channels=16)
+# MAVLAPLIALVYSVPRLSRWLAQPYYLLSALLSAAFLLVRKLPPLCHGLPTQREDGNPCDFDWLSPSCFLLAVVAGMLLP
 
-# 10️⃣ 학습 준비
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model, pred_head = model.to(device), pred_head.to(device)
-optimizer = Adam(list(model.parameters()) + list(pred_head.parameters()), lr=1e-3)
-criterion = BCELoss()
+input_sequence = "MAVLAPLIALVYSVPRLSRWLAQPYYLLSALLSAAFLLVRKLPPLCHGLPTQREDGNPCDFDWLSPSCFLLAVVAGMLLP"
 
-# 11️⃣ 학습 함수 (pos/neg 속성명 수정)
-def train():
-    model.train(); pred_head.train()
-    optimizer.zero_grad()
-    z = model(train_data.to(device))
-    pos_out = pred_head(z, train_data.pos_edge_label_index.to(device))
-    neg_out = pred_head(z, train_data.neg_edge_label_index.to(device))
-    pos_label = torch.ones(pos_out.size(0), device=device)
-    neg_label = torch.zeros(neg_out.size(0), device=device)
-    out = torch.cat([pos_out, neg_out], dim=0)
-    label = torch.cat([pos_label, neg_label], dim=0)
-    loss = criterion(out, label)
-    loss.backward()
-    optimizer.step()
-    return loss.item()
+top5 = predict_top5_diseases(
+    input_sequence, model, esm_model, batch_converter, mlb, device
+)
 
-# 12️⃣ 평가 함수 (val/test도 동일하게)
-@torch.no_grad()
-def evaluate(split_data):
-    model.eval(); pred_head.eval()
-    z = model(split_data.to(device))
-    pos = pred_head(z, split_data.pos_edge_label_index.to(device))
-    neg = pred_head(z, split_data.neg_edge_label_index.to(device))
-    y_true = torch.cat([torch.ones(pos.size(0)), torch.zeros(neg.size(0))]).cpu().numpy()
-    y_score = torch.cat([pos, neg], dim=0).cpu().numpy()
-    return {
-        'auc': roc_auc_score(y_true, y_score),
-        'ap':  average_precision_score(y_true, y_score)
-    }
+disease_id_to_name = dict(zip(df['Disease ID'], df['Disease Name']))
 
-# 13️⃣ 학습 루프 실행
-for epoch in range(1, 51):
-    loss = train()
-    print(f"Epoch {epoch:02d} — Loss: {loss:.4f}")
-    if epoch % 5 == 0:
-        metrics = evaluate(val_data)
-        print(f"  ↳ Val AUC: {metrics['auc']:.4f}, Val AP: {metrics['ap']:.4f}")
+print("📌 입력 서열:", input_sequence)
+print("📌 상위 5개 예측 질병:")
+for i, disease in enumerate(top5, 1):
+    print(f"{i}. {disease}")
 
-print("✅ 학습 완료")
