@@ -1,7 +1,7 @@
 import pandas as pd
 
 # 원본 로드
-df = pd.read_csv("./models/data/processed_train_small.csv")
+df = pd.read_csv("./models/data/processed_train.csv")
 
 # Proteins 테이블
 df_protein = df[['UniProt_ID', 'sequence']].drop_duplicates().dropna()
