@@ -6,7 +6,7 @@ erDiagram
         TEXT    sequence           "아미노산 서열"
     }
     DISEASE {
-        VARCHAR disease_id PK      "질병 식별자"
+        VARCHAR disease_id PK      "질병 식별자 id"
         VARCHAR name              "질병 이름"
     }
     PROTEIN_DISEASE {
