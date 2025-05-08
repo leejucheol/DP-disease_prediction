@@ -25,10 +25,6 @@ esm_model.eval()
 
 df.columns
 
-# 20개 아미노산 → one-hot 인덱싱용 딕셔너리
-AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
-AA_TO_IDX = {aa: i for i, aa in enumerate(AMINO_ACIDS)}
-
 # 서열을 그래프로 나타낸다 esm 임베딩해서
 def sequence_to_graph_with_esm(seq, esm_model, batch_converter, device):
     seq = seq.strip().upper()
