@@ -1,13 +1,13 @@
 from pydantic import BaseModel
-from typing import List, Optional
 
 class SequenceInput(BaseModel):
     sequence: str
 
-class PredictionResponse(BaseModel):
+class DiseasePrediction(BaseModel):
     disease_id: str
     disease_name: str
+    probability: float
 
-class ProteinPredictionResponse(BaseModel):
+class DiseasePredictionResponse(BaseModel):
     sequence: str
-    predictions: List[PredictionResponse]
+    predictions: list[DiseasePrediction]

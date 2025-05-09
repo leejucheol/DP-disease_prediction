@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asyncio
-from app.database_connect import engine
+from app.databases.database_connect import engine
 
 from sqlalchemy import text
 
