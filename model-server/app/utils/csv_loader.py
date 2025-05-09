@@ -1,7 +1,7 @@
 import csv
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert
-from app.database_connect import (
+from app.databases.database_connect import (
     protein_table,
     disease_table,
     protein_disease_table,
