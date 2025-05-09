@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from .. import schemas, models
 from ..database import get_db
-
 from dotenv import load_dotenv
 import os
 
@@ -32,8 +31,8 @@ async def predict_protein(
         
         # 2. 예측 실행
         top5 = await predict_top5_diseases(
-            protein.sequence, 
-            model, esm_model, 
+            protein.sequence,
+            model, esm_model,
             batch_converter, mlb, device
         )
         
@@ -55,6 +54,6 @@ async def predict_protein(
     except Exception as e:
         await db.rollback()
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"예측 중 오류 발생: {str(e)}"
         )

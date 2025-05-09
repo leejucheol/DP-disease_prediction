@@ -1,9 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-class ProteinBase(BaseModel):
+class SequenceInput(BaseModel):
     sequence: str
-    uniprot_id: Optional[str] = None
 
 class PredictionResponse(BaseModel):
     disease_id: str

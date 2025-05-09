@@ -1,9 +1,8 @@
-# main.py
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.models.protein import Base
-from app.database_connect import engine
+from app.databases.database_connect import Base, engine
 from app.routers import proteins
+from app.models.protein import Protein, Disease, GO_term, PDBStructure, ProteinAlias, PredictionResult
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -12,6 +11,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(proteins.router)
 
 @app.get("/")
 async def root():
