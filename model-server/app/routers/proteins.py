@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..models.protein import Protein
-from ..models.prediction import PredictionResult
+from ..models.prediction import PredictDisease, ModelPredictionRun, PredictProtein
 from app.databases.protein import SequenceInput, DiseasePrediction, DiseasePredictionResponse
 from app.databases.database_connect import get_db
 from app.models.gcn_v0_1_0 import (
@@ -17,9 +17,9 @@ async def predict_disease(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        sequence_id = str(uuid.uuid4())
+        uniprot_id = str(uuid.uuid4())
         db_protein = Protein(
-            sequence_id=sequence_id,
+            uniprot_id=uniprot_id,
             sequence=protein.sequence,
             gene_id=None
         )
@@ -32,6 +32,7 @@ async def predict_disease(
             model, esm_model,
             batch_converter, mlb, device
         )
+        print(top5)
         
         for pred in top5:
             db_pred = PredictionResult(
