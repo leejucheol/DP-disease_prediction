@@ -1,10 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.databases.database_connect import Base, engine
 from app.routers import proteins
-from app.models.protein import Protein, GO_term, PDBStructure, ProteinAlias
-from app.models.disease import Disease
-from app.models.prediction import PredictionResult
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

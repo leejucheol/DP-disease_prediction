@@ -48,3 +48,7 @@ model-server/
 └── README.md
 
 ```
+
+```
+uvicorn app.main:app --reload
+```
