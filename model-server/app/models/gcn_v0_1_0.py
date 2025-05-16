@@ -1,5 +1,6 @@
 import pandas as pd
 import torch
+import os
 from torch_geometric.data import Data
 from torch_geometric.transforms import RandomLinkSplit
 from sklearn.preprocessing import LabelEncoder
@@ -12,8 +13,22 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 import esm
 
 # 1. 데이터 로드
-# model-server/ 위치에서 python gcn_0.1.0.py 실행할 경우 상대 경로
-df = pd.read_csv("./app/models/data/processed_train_small.csv")
+# 현재 파일의 경로를 기준으로 데이터 파일 경로 설정
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.dirname(os.path.dirname(current_dir))
+data_path = os.path.join(app_dir, "app", "data", "processed_train_small.csv")
+
+# 데이터 파일 존재 확인
+if not os.path.exists(data_path):
+    # 대체 경로 시도
+    data_path = os.path.join(os.path.dirname(current_dir), "data", "processed_train_small.csv")
+
+if os.path.exists(data_path):
+    print(f"데이터 파일 로드: {data_path}")
+else:
+    print(f"데이터 파일을 찾을 수 없습니다: {data_path}")
+    
+df = pd.read_csv(data_path)
 
 # 1. 모델 로드
 esm_model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
