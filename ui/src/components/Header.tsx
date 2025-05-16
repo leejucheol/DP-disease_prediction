@@ -3,14 +3,25 @@ import "./Header.css";
 
 interface HeaderProps {
     placeholder: string;
+    onSearch: (searchText: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ placeholder }) => {
+const Header: React.FC<HeaderProps> = ({ placeholder, onSearch }) => {
     const [showModal, setShowModal] = useState(false);
+    const [searchText, setSearchText] = useState("");
 
     const handleSearch = () => {
-        // 검색 버튼 클릭 시 동작 추가
-        alert("검색 버튼이 클릭되었습니다!");
+        if (searchText.trim()) {
+            onSearch(searchText);
+        } else {
+            alert("검색어를 입력해주세요!");
+        }
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            handleSearch();
+        }
     };
 
     return (
@@ -23,7 +34,14 @@ const Header: React.FC<HeaderProps> = ({ placeholder }) => {
                     <button className="search-button" onClick={handleSearch}>
                         검색
                     </button>
-                    <input type="text" className="search-input" placeholder={placeholder} />
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder={placeholder}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                    />
                 </div>
                 <div className="signin-area">
                     <div className="signin-button" onClick={() => setShowModal(true)}>

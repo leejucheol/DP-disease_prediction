@@ -9,19 +9,21 @@ interface WorkCategoryProps {
 
 const WorkCategory: React.FC<WorkCategoryProps> = ({ onSelect, defaultSelected }) => {
     const navigate = useNavigate();
-    const [selected, setSelected] = useState<string | null>(null);
+    // 초기 상태만 defaultSelected로 설정하고, 이후에는 사용자 선택에 따라 변경
+    const [selected, setSelected] = useState<string>(defaultSelected || "protein-search");
 
+    // 초기 렌더링시에만 defaultSelected 적용
     useEffect(() => {
-        // 기본 선택값 설정
         if (defaultSelected) {
             setSelected(defaultSelected);
             onSelect(defaultSelected);
         }
-    }, [defaultSelected, onSelect]);
+    }, []); // 의존성 배열을 비워서 컴포넌트 마운트 시에만 실행
 
     const handleSelect = (id: string) => {
         setSelected(id);
         onSelect(id);
+        console.log("Category selected:", id); // 디버깅 로그
     };
 
     return (

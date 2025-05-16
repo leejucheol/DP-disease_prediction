@@ -3,6 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  # CORS 미들웨어 추가
 from contextlib import asynccontextmanager
 from app.databases.database_connect import Base, engine
 from app.routers import proteins
@@ -56,6 +57,16 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+# CORS 미들웨어 설정 추가
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React 앱의 오리진 허용
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용 (GET, POST, PUT, DELETE 등)
+    allow_headers=["*"],  # 모든 HTTP 헤더 허용
+)
+
 app.include_router(proteins.router)
 
 @app.get("/")
