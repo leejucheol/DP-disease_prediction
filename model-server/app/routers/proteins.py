@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..models.protein import Protein
-from ..models.prediction import PredictDisease, ModelPredictionRun, PredictProtein
-from app.databases.protein import SequenceInput, DiseasePrediction, DiseasePredictionResponse
+from app.schema.models import Protein
+from app.schema.models import PredictDisease, ModelPredictionRun, PredictProtein
+from app.schema.sequence_input_dto import SequenceInput, DiseasePrediction, DiseasePredictionResponse
 from app.databases.database_connect import get_db
 from app.models.gcn_v0_1_0 import (
     model, esm_model, batch_converter, mlb, device, predict_top5_diseases
 )
 import uuid
+from datetime import date
 
 router = APIRouter(prefix="/proteins", tags=["proteins"])
 
@@ -17,16 +18,18 @@ async def predict_disease(
     db: AsyncSession = Depends(get_db)
 ):
     try:
+        # 유니크한 ID 생성 (UUID)
         uniprot_id = str(uuid.uuid4())
+        
+        # 입력된 단백질 시퀀스를 Protein 테이블에 저장
+        # gene_id 필드 제거
         db_protein = Protein(
             uniprot_id=uniprot_id,
-            sequence=protein.sequence,
-            gene_id=None
+            sequence=protein.sequence
         )
         db.add(db_protein)
-        await db.commit()
-        await db.refresh(db_protein)
         
+        # 모델로 질병 예측 수행
         top5 = predict_top5_diseases(
             protein.sequence,
             model, esm_model,
@@ -34,15 +37,37 @@ async def predict_disease(
         )
         print(top5)
         
-        for pred in top5:
-            db_pred = PredictionResult(
-                sequence=db_protein.sequence,
-                predicted_disease_id=pred["disease_id"],
-                confidence_score=pred["probability"]
-            )
-            db.add(db_pred)
-        await db.commit()
+        # 모델 예측 실행 정보 저장
+        model_run = ModelPredictionRun(
+            input_sequence=protein.sequence,
+            created_at=date.today(),
+            model_version="gcn_v0_1_0"  # 현재 사용 중인 모델 버전
+        )
+        db.add(model_run)
+        await db.flush()  # run_id를 얻기 위해 flush
         
+        # 예측된 단백질 정보 저장
+        predict_protein = PredictProtein(
+            run_id=model_run.run_id,
+            rank=1,  # 입력 단백질은 항상 순위 1
+            sequence=protein.sequence
+        )
+        db.add(predict_protein)
+        
+        # 예측된 질병 정보 저장
+        for i, pred in enumerate(top5):
+            predict_disease = PredictDisease(
+                run_id=model_run.run_id,
+                disease_name=pred["disease_name"],
+                rank=i + 1  # 1부터 5까지의 순위
+            )
+            db.add(predict_disease)
+        
+        # 변경사항 커밋
+        await db.commit()
+        await db.refresh(db_protein)
+        
+        # 응답 구성
         predictions = [
             DiseasePrediction(
                 disease_id=pred["disease_id"],
@@ -52,7 +77,7 @@ async def predict_disease(
         ]
         
         return DiseasePredictionResponse(
-            protein=db_protein.sequence,
+            sequence=db_protein.sequence,  # 'protein'에서 'sequence'로 변경
             predictions=predictions
         )
         
@@ -63,4 +88,3 @@ async def predict_disease(
             status_code=500,
             detail=f"예측 중 오류 발생: {str(e)}",
         )
-    

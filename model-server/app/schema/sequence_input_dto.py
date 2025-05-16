@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 
 class SequenceInput(BaseModel):
     sequence: str
@@ -9,5 +10,5 @@ class DiseasePrediction(BaseModel):
     probability: float
 
 class DiseasePredictionResponse(BaseModel):
-    sequence: str
-    predictions: list[DiseasePrediction]
+    sequence: str  # 'protein' 대신 'sequence'로 변경
+    predictions: List[DiseasePrediction]

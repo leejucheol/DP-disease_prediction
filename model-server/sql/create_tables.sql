@@ -6,7 +6,7 @@ USE disease_prediction;
 -- 1. 단백질 테이블 (protein)
 CREATE TABLE protein (
     uniprot_id     VARCHAR(100) NOT NULL,
-    sequence       VARCHAR(1000) NOT NULL,
+    sequence       TEXT NOT NULL,
     PRIMARY KEY (uniprot_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -29,15 +29,15 @@ CREATE TABLE protein_disease (
 -- 4. 예측된 단백질 테이블 (predict_protein)
 CREATE TABLE predict_protein (
     run_id         INT NOT NULL,
-    rank           INT NOT NULL,
-    sequence       VARCHAR(1000) NOT NULL,
+    `rank`         INT NOT NULL,
+    sequence       TEXT NOT NULL,
     PRIMARY KEY (run_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 5. 모델 예측 로그 테이블 (model_prediction_run)
 CREATE TABLE model_prediction_run (
     run_id         INT NOT NULL,
-    input_sequence VARCHAR(1000) NOT NULL,
+    input_sequence TEXT NOT NULL,
     created_at     DATE NOT NULL,
     model_version  VARCHAR(20) NOT NULL,
     PRIMARY KEY (run_id)
@@ -47,20 +47,12 @@ CREATE TABLE model_prediction_run (
 CREATE TABLE predict_disease (
     run_id         INT NOT NULL,
     disease_name   VARCHAR(100) NOT NULL,
-    rank           INT NOT NULL,
+    `rank`         INT NOT NULL,
     PRIMARY KEY (run_id),
     FOREIGN KEY (run_id) REFERENCES predict_protein(run_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 예시 데이터 삽입
-INSERT INTO protein (uniprot_id, sequence, protein_id, protein_name)
-VALUES ('P12345', 'MVKVYAPASS', 'PROT001', 'Sample Protein');
 
-INSERT INTO disease (disease_id, disease_name)
-VALUES ('D001', 'Alzheimer Disease');
-
-INSERT INTO protein_disease (uniprot_id, disease_id)
-VALUES ('P12345', 'D001');
 
 -- 테이블 목록 확인
 SHOW TABLES;
