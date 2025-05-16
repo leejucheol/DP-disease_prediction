@@ -130,6 +130,8 @@ uvicorn app.main:app --reload
 -   **ESM**: 단백질 시퀀스 임베딩 모델
 -   **MySQL**: 데이터베이스
 
-## 오류 처리
+## 처리해야 할 오류
 
-서버는 예측 과정에서 발생할 수 있는 오류를 처리하며, 오류 발생 시 데이터베이스 rollback을 수행하고 적절한 HTTP 오류 응답을 반환한다.
+-   post 요청 시에 protein 테이블에도 입력 sequence가 저장이 되는 경우
+-   모델 결과는 질병만 하기 때문에 predict_protein 테이블은 삭제
+-   post 요청 전 입력 sequence가 있는 지 확인 후 있다면 데이터를 insert 하는 것이 아닌 select로 보여줌.
