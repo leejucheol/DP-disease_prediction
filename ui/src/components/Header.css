@@ -1,0 +1,150 @@
+header {
+    width: calc(100vw - 300px);
+    height: 70px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.logo-area {
+    width: 300px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo {
+    color: #ccc;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.search-area {
+    width: 500px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.search-input {
+    width: 80%;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0px 5px 5px 0px;
+    border: 1px solid #ccc;
+    padding: 0 10px;
+}
+
+.search-button {
+    height: 32px;
+    padding: 0 16px;
+    color: #444;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px 0px 0px 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.profile-area {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.profile-image {
+    width: 40px;
+    height: 40px;
+    background-color: #ccc;
+    border-radius: 20px;
+}
+
+.signin-area {
+    width: 140px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.signin-button {
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 20px;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.signin-button p {
+    color: #000;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* 모달 스타일 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #444; /* 기존 */
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    width: 300px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+.google-login-button {
+    background: #fff;
+    color: #444;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.google-login-button:hover {
+    background: #ddd;
+}
+
+.close-button {
+    margin-top: 10px;
+    background: #888;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+}
+
+.close-button:hover {
+    background: #777;
+}

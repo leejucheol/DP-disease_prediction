@@ -1,6 +1,18 @@
-# folder
+# folders
 dump
-ui
+
+# cache folder
+__pycache__
+
+#files
+.env
+
+# dump files
+t.py
+tt.py
+ttt.py
+tttt.py
 
 # large data
 train_data.csv
+processed_train.csv

@@ -1,0 +1,51 @@
+.home-page {
+    width: 100vw;
+    height: 100vh;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.title {
+    font-size: 76px;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+}
+
+.start-button {
+    width: 150px;
+    height: 40px;
+    font-size: 16px;
+    font-weight: 700;
+    background-color: #ffffff;
+    color: #000000;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.start-button:hover {
+    background-color: #e0e0e0;
+}
+
+.description {
+    position: absolute;
+    bottom: 20px;
+    left: 50px;
+    color: #ffffff;
+    max-width: 600px;
+    height: 150px;
+}
+
+.description-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
