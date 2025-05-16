@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
 from app.schema.models import Protein
 from app.schema.models import PredictDisease, ModelPredictionRun, PredictProtein
-from app.schema.sequence_input_dto import SequenceInput, DiseasePrediction, DiseasePredictionResponse
+from app.schema.sequence_input_dto import SequenceInput, DiseasePrediction, DiseasePredictionResponse, DiseaseResponseProtein
 from app.databases.database_connect import get_db
+from app.repositories.prediction_dao import get_proteins_by_disease_dao
 from app.models.gcn_v0_1_0 import (
     model, esm_model, batch_converter, mlb, device, predict_top5_diseases
 )
@@ -88,3 +90,19 @@ async def predict_disease(
             status_code=500,
             detail=f"예측 중 오류 발생: {str(e)}",
         )
+
+@router.get("/diseases/{disease_id}", response_model=List[DiseaseResponseProtein])
+async def get_proteins_by_disease(
+    disease_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    특정 질병과 관련된 모든 단백질 서열 조회
+    """
+    try:
+        proteins = await get_proteins_by_disease_dao(db, disease_id)
+        if not proteins:
+            raise HTTPException(status_code=404, detail="No proteins found for this disease")
+        return proteins
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

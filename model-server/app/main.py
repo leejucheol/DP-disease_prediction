@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.databases.database_connect import Base, engine
-from app.routers import proteins
+from app.routers import prediction_router
 from app.databases.insert_basic_data import insert_basic_data
 
 # 모든 모델 클래스 import
@@ -56,7 +56,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(proteins.router)
+app.include_router(prediction_router.router)
 
 @app.get("/")
 async def root():
