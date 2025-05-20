@@ -51,7 +51,7 @@ async def predict_disease(
         # 예측된 단백질 정보 저장
         predict_protein = PredictProtein(
             run_id=model_run.run_id,
-            rank=1,  # 입력 단백질은 항상 순위 1
+            pp_order=1,  # 입력 단백질은 항상 순위 1
             sequence=protein.sequence
         )
         db.add(predict_protein)

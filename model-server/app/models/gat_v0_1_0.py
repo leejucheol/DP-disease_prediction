@@ -4,7 +4,7 @@ import os
 from torch_geometric.data import Data
 from torch_geometric.transforms import RandomLinkSplit
 from sklearn.preprocessing import LabelEncoder
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GATConv, global_mean_pool
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch.nn import BCELoss
@@ -145,24 +145,22 @@ print(batch.y.shape)  # ✅ 반드시 (16, C) 나와야 정상
 ## 모델 정의
 """
 
-from torch_geometric.nn import GCNConv, global_mean_pool
-import torch.nn.functional as F
-
-class ProteinGCN(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels):
+class ProteinGAT(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, heads=4):
         super().__init__()
-        self.conv1 = GCNConv(in_channels, hidden_channels)
-        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.gat1 = GATConv(in_channels, hidden_channels, heads=heads)
+        self.gat2 = GATConv(hidden_channels*heads, hidden_channels, heads=1)
         self.fc = torch.nn.Linear(hidden_channels, out_channels)
 
     def forward(self, x, edge_index, batch):
-        x = F.relu(self.conv1(x, edge_index))
-        x = F.relu(self.conv2(x, edge_index))
+        x = F.elu(self.gat1(x, edge_index))
+        x = F.elu(self.gat2(x, edge_index))
         x = global_mean_pool(x, batch)
         return self.fc(x)
 
+
 num_disease_classes = len(mlb.classes_)
-model = ProteinGCN(in_channels=320, hidden_channels=64, out_channels=num_disease_classes)
+model = ProteinGAT(in_channels=320, hidden_channels=64, out_channels=num_disease_classes)
 
 print("질병 클래스 수:", num_disease_classes)
 
@@ -170,7 +168,7 @@ from torch_geometric.loader import DataLoader
 import torch.nn as nn
 
 num_disease_classes = len(mlb.classes_)
-model = ProteinGCN(in_channels=320, hidden_channels=64, out_channels=num_disease_classes).to(device)
+model = ProteinGAT(in_channels=320, hidden_channels=64, out_channels=num_disease_classes).to(device)
 
 criterion = nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)

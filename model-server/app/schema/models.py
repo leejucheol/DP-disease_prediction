@@ -34,7 +34,7 @@ class PredictProtein(Base):
     __tablename__ = "predict_protein"
     
     run_id = Column(Integer, primary_key=True)
-    rank = Column(Integer, nullable=False)
+    pp_order = Column(Integer, nullable=False)
     sequence = Column(Text, nullable=False)
     
     # 관계 정의
