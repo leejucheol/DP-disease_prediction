@@ -29,7 +29,7 @@ async def create_tables():
 async def check_tables_exist():
     """데이터베이스에 필요한 테이블들이 이미 존재하는지 확인합니다."""
     required_tables = ['protein', 'disease', 'protein_disease', 
-                      'predict_protein', 'model_prediction_run', 'predict_disease']
+                      'input_protein', 'model_prediction_run', 'predict_disease']
     
     async with engine.begin() as conn:
         # 데이터베이스에 존재하는 테이블 확인

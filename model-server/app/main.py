@@ -11,12 +11,12 @@ from app.databases.insert_basic_data import insert_basic_data
 
 # 모든 모델 클래스 import
 from app.schema.models import Protein, Disease, ProteinDisease
-from app.schema.models import PredictProtein, ModelPredictionRun, PredictDisease
+from app.schema.models import InputProtein, ModelPredictionRun, PredictDisease
 
 async def check_tables_exist():
     """데이터베이스에 필요한 테이블들이 이미 존재하는지 확인합니다."""
     required_tables = ['protein', 'disease', 'protein_disease', 
-                        'predict_protein', 'model_prediction_run', 'predict_disease']
+                        'input_protein', 'model_prediction_run', 'predict_disease']
     
     async with engine.begin() as conn:
         # 데이터베이스에 존재하는 테이블 확인
