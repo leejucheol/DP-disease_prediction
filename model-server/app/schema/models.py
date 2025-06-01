@@ -31,14 +31,14 @@ class ProteinDisease(Base):
     disease = relationship("Disease", back_populates="proteins")
 
 class PredictProtein(Base):
-    __tablename__ = "predict_protein"
+    __tablename__ = "input_protein"
     
     run_id = Column(Integer, primary_key=True)
     pp_order = Column(Integer, nullable=False)
     sequence = Column(Text, nullable=False)
     
     # 관계 정의
-    predicted_diseases = relationship("PredictDisease", back_populates="predict_protein")
+    predicted_diseases = relationship("PredictDisease", back_populates="input_protein")
 
 class ModelPredictionRun(Base):
     __tablename__ = "model_prediction_run"

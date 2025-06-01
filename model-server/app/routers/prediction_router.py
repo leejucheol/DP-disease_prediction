@@ -6,7 +6,7 @@ from app.schema.models import PredictDisease, ModelPredictionRun, PredictProtein
 from app.schema.sequence_input_dto import SequenceInput, DiseasePrediction, DiseasePredictionResponse, DiseaseResponseProtein
 from app.databases.database_connect import get_db
 from app.repositories.prediction_dao import get_proteins_by_disease_dao
-from app.models.gcn_v0_1_0 import (
+from app.models.gat_v0_1_0 import (
     model, esm_model, batch_converter, mlb, device, predict_top5_diseases
 )
 import uuid
@@ -43,7 +43,7 @@ async def predict_disease(
         model_run = ModelPredictionRun(
             input_sequence=protein.sequence,
             created_at=date.today(),
-            model_version="gcn_v0_1_0"  # 현재 사용 중인 모델 버전
+            model_version="gat_v0_1_0"  # 현재 사용 중인 모델 버전
         )
         db.add(model_run)
         await db.flush()  # run_id를 얻기 위해 flush
