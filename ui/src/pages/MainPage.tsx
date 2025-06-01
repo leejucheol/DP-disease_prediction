@@ -16,7 +16,7 @@ interface PredictionResult {
 }
 
 const MainPage: React.FC = () => {
-    const [placeholder, setPlaceholder] = useState<string>("단백질 ID 혹은 이름을 입력해주세요...");
+    const [placeholder, setPlaceholder] = useState<string>("Input Protein Sequence");
     const [selectedCategory, setSelectedCategory] = useState<string>("protein-search");
     const [loading, setLoading] = useState<boolean>(false);
     const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
