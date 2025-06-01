@@ -48,6 +48,7 @@ CREATE TABLE predict_disease (
     run_id         INT NOT NULL,
     disease_name   VARCHAR(100) NOT NULL,
     pd_rank        INT NOT NULL,
+    probability    FLOAT NOT NULL,
     PRIMARY KEY (run_id),
     FOREIGN KEY (run_id) REFERENCES model_prediction_run(run_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

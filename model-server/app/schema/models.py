@@ -53,6 +53,6 @@ class PredictDisease(Base):
     run_id = Column(Integer, ForeignKey("model_prediction_run.run_id"), primary_key=True)
     disease_name = Column(String(100), nullable=False)
     pd_rank = Column(Integer, primary_key=True) 
-    
+    probability = Column(String(50), nullable=True)
     # # 관계 정의
     # predict_protein = relationship("InputProtein", back_populates="predicted_diseases")

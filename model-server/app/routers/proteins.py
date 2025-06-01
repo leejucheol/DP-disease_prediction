@@ -58,7 +58,8 @@ async def predict_disease(
             predict_disease = PredictDisease(
                 run_id=model_run.run_id,
                 disease_name=pred["disease_name"],
-                pd_rank=i + 1  # 1부터 5까지의 순위
+                pd_rank=i + 1,  # 1부터 5까지의 순위
+                probability=pred["probability"]
             )
             db.add(predict_disease)
         
