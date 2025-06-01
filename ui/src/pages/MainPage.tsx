@@ -23,13 +23,13 @@ const MainPage: React.FC = () => {
 
     useEffect(() => {
         // 기본값으로 단백질 검색 활성화
-        setPlaceholder("단백질 ID 혹은 이름을 입력해주세요...");
+        setPlaceholder("Input Protein Sequence");
     }, []);
 
     const handleCategorySelect = (id: string) => {
         setSelectedCategory(id);
         if (id === "protein-search") {
-            setPlaceholder("단백질 ID 혹은 이름을 입력해주세요...");
+            setPlaceholder("Input Protein Sequence");
         } else if (id === "disease-search") {
             setPlaceholder("질병 ID 혹은 이름을 입력해주세요...");
             // 카테고리 변경 시 결과 초기화
