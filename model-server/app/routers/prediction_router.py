@@ -6,19 +6,28 @@ from app.schema.models import PredictDisease, ModelPredictionRun, PredictProtein
 from app.schema.sequence_input_dto import SequenceInput, DiseasePrediction, DiseasePredictionResponse, DiseaseResponseProtein
 from app.databases.database_connect import get_db
 from app.repositories.prediction_dao import get_proteins_by_disease_dao
+from app.models.gcn_v0_1_0 import (
+    model as gcn_model,
+    esm_model as gcn_esm_model,
+    batch_converter as gcn_batch_converter,
+    mlb as gcn_mlb,
+    device as gcn_device,
+    predict_top5_diseases as gcn_predict_top5_diseases
+)
 from app.models.gat_v0_1_0 import (
-    model, esm_model, batch_converter, mlb, device, predict_top5_diseases
+    model as gat_model,
+    esm_model as gat_esm_model,
+    batch_converter as gat_batch_converter,
+    mlb as gat_mlb,
+    device as gat_device,
+    predict_top5_diseases as gat_predict_top5_diseases
 )
 import uuid
 from datetime import date
 
 router = APIRouter(prefix="/proteins", tags=["proteins"])
 
-@router.post("/predict", response_model=DiseasePredictionResponse)
-async def predict_disease(
-    protein: SequenceInput,
-    db: AsyncSession = Depends(get_db)
-):
+async def common_prediction(db: AsyncSession, sequence: str, predict_top5_diseases, model_version: str):
     try:
         # 유니크한 ID 생성 (UUID)
         uniprot_id = str(uuid.uuid4())
@@ -27,21 +36,23 @@ async def predict_disease(
         # gene_id 필드 제거
         db_protein = Protein(
             uniprot_id=uniprot_id,
-            sequence=protein.sequence
+            sequence=sequence
         )
         db.add(db_protein)
         
         # 모델로 질병 예측 수행
         top5 = predict_top5_diseases(
-            protein.sequence,
-            model, esm_model,
-            batch_converter, mlb, device
+            gcn_model if model_version == "gcn" else gat_model,
+            gcn_esm_model if model_version == "gcn" else gat_esm_model,
+            gcn_batch_converter if model_version == "gcn" else gat_batch_converter,
+            gcn_mlb if model_version == "gcn" else gat_mlb,
+            gcn_device if model_version == "gcn" else gat_device
         )
         print(top5)
         
         # 모델 예측 실행 정보 저장
         model_run = ModelPredictionRun(
-            input_sequence=protein.sequence,
+            input_sequence=sequence,
             created_at=date.today(),
             model_version="gat_v0_1_0"  # 현재 사용 중인 모델 버전
         )
@@ -52,7 +63,7 @@ async def predict_disease(
         predict_protein = PredictProtein(
             run_id=model_run.run_id,
             pp_order=1,  # 입력 단백질은 항상 순위 1
-            sequence=protein.sequence
+            sequence=sequence
         )
         db.add(predict_protein)
         
@@ -89,6 +100,44 @@ async def predict_disease(
         raise HTTPException(
             status_code=500,
             detail=f"예측 중 오류 발생: {str(e)}",
+        )
+    
+@router.post("/predict/gcn", response_model=DiseasePredictionResponse)
+async def predict_disease_gcn(
+    protein: SequenceInput,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        return await common_prediction(
+            db, 
+            protein.sequence, 
+            gcn_predict_top5_diseases, 
+            "gcn"
+        )
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"GCN 예측 중 오류 발생: {str(e)}",
+        )
+
+@router.post("/predict/gat", response_model=DiseasePredictionResponse)
+async def predict_disease_gat(
+    protein: SequenceInput,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        return await common_prediction(
+            db, 
+            protein.sequence, 
+            gat_predict_top5_diseases, 
+            "gat"
+        )
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"GAT 예측 중 오류 발생: {str(e)}",
         )
 
 @router.get("/diseases/{disease_id}", response_model=List[DiseaseResponseProtein])
