@@ -16,12 +16,12 @@ import esm
 # 현재 파일의 경로를 기준으로 데이터 파일 경로 설정
 current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.dirname(os.path.dirname(current_dir))
-data_path = os.path.join(app_dir, "app", "data", "processed_train_small.csv")
+data_path = os.path.join(app_dir, "app", "data", "processed_train_with_unchar.small.csv")
 
 # 데이터 파일 존재 확인
 if not os.path.exists(data_path):
     # 대체 경로 시도
-    data_path = os.path.join(os.path.dirname(current_dir), "data", "processed_train_small.csv")
+    data_path = os.path.join(os.path.dirname(current_dir), "data", "processed_train_with_unchar.small.csv")
 
 if os.path.exists(data_path):
     print(f"데이터 파일 로드: {data_path}")
