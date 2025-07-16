@@ -2,12 +2,8 @@ import pandas as pd
 import torch
 import os
 from torch_geometric.data import Data
-from torch_geometric.transforms import RandomLinkSplit
-from sklearn.preprocessing import LabelEncoder
 from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
-from torch.optim import Adam
-from torch.nn import BCELoss
 from sklearn.metrics import roc_auc_score, average_precision_score
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 import esm
@@ -37,7 +33,6 @@ batch_converter = alphabet.get_batch_converter()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 esm_model = esm_model.to(device)
 esm_model.eval()
-
 df.columns
 
 # 서열을 그래프로 나타낸다 esm 임베딩해서
