@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schema.models import Protein
-from app.schema.models import PredictDisease, ModelPredictionRun, InputProtein
+from app.schema.models import PredictDisease, ModelPredictionRun, InputProtein, Protein
 from app.schema.sequence_input_dto import SequenceInput, DiseasePrediction, DiseasePredictionResponse
 from app.databases.database_connect import get_db
 from app.models.gcn_v0_1_0 import (

@@ -82,7 +82,7 @@ uvicorn app.main:app --reload
     - 실행 파일: `app/models/gcn_v0_1_0.py`
     - 사용 모델: `esm2_t6_8M_UR50D` (ESM 모델)
     - 주요 함수: `sequence_to_graph_with_esm()`
-    - 동작: 단백질 시퀀스를 ESM(Evolutionary Scale Modeling) 모델에 입력해서 각 아미노산 서열의 임베딩 벡터를 얻는다.
+    - 동작: 단백질 시퀀스를 ESM(Evolutionary Scale Modeling) 모델을 통해 320차원 벡터로 임베딩된다. 각 아미노산 서열은 생물학적 특징이 압축된 고차원 포인트로 표현된다.
 
 2. **그래프 변환**:
 
