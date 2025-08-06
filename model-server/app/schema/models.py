@@ -30,15 +30,14 @@ class ProteinDisease(Base):
     protein = relationship("Protein", back_populates="diseases")
     disease = relationship("Disease", back_populates="proteins")
 
-class PredictProtein(Base):
-    __tablename__ = "predict_protein"
+class InputProtein(Base):
+    __tablename__ = "input_protein"
     
-    run_id = Column(Integer, primary_key=True)
-    rank = Column(Integer, nullable=False)
+    run_id = Column(Integer, ForeignKey("model_prediction_run.run_id"), primary_key=True)
     sequence = Column(Text, nullable=False)
     
-    # 관계 정의
-    predicted_diseases = relationship("PredictDisease", back_populates="predict_protein")
+    # # 관계 정의
+    # predicted_diseases = relationship("InputDisease", back_populates="input_protein")
 
 class ModelPredictionRun(Base):
     __tablename__ = "model_prediction_run"
@@ -51,9 +50,9 @@ class ModelPredictionRun(Base):
 class PredictDisease(Base):
     __tablename__ = "predict_disease"
     
-    run_id = Column(Integer, ForeignKey("predict_protein.run_id"), primary_key=True)
+    run_id = Column(Integer, ForeignKey("model_prediction_run.run_id"), primary_key=True)
     disease_name = Column(String(100), nullable=False)
-    rank = Column(Integer, primary_key=True)  # rank도 primary key로 설정
-    
-    # 관계 정의
-    predict_protein = relationship("PredictProtein", back_populates="predicted_diseases")
+    pd_rank = Column(Integer, primary_key=True) 
+    probability = Column(String(50), nullable=True)
+    # # 관계 정의
+    # predict_protein = relationship("InputProtein", back_populates="predicted_diseases")

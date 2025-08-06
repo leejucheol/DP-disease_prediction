@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+aiomysql
+python-dotenv
+pandas
+numpy
+torch
+torch-geometric
+scikit-learn
+fair-esm==2.0.0
+cryptography
+pydantic
+typing

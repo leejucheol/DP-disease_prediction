@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schema.models import Protein
-from app.schema.models import PredictDisease, ModelPredictionRun, PredictProtein
+from app.schema.models import PredictDisease, ModelPredictionRun, InputProtein, Protein
 from app.schema.sequence_input_dto import SequenceInput, DiseasePrediction, DiseasePredictionResponse
 from app.databases.database_connect import get_db
 from app.models.gcn_v0_1_0 import (
@@ -47,9 +46,8 @@ async def predict_disease(
         await db.flush()  # run_id를 얻기 위해 flush
         
         # 예측된 단백질 정보 저장
-        predict_protein = PredictProtein(
+        predict_protein = InputProtein(
             run_id=model_run.run_id,
-            rank=1,  # 입력 단백질은 항상 순위 1
             sequence=protein.sequence
         )
         db.add(predict_protein)
@@ -59,7 +57,8 @@ async def predict_disease(
             predict_disease = PredictDisease(
                 run_id=model_run.run_id,
                 disease_name=pred["disease_name"],
-                rank=i + 1  # 1부터 5까지의 순위
+                pd_rank=i + 1,  # 1부터 5까지의 순위
+                probability=pred["probability"]
             )
             db.add(predict_disease)
         
@@ -77,7 +76,7 @@ async def predict_disease(
         ]
         
         return DiseasePredictionResponse(
-            sequence=db_protein.sequence,  # 'protein'에서 'sequence'로 변경
+            sequence=db_protein.sequence,  
             predictions=predictions
         )
         

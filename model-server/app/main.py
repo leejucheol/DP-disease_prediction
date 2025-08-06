@@ -3,6 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  # CORS 미들웨어 추가
 from contextlib import asynccontextmanager
 from app.databases.database_connect import Base, engine
 from app.routers import proteins
@@ -10,12 +11,12 @@ from app.databases.insert_basic_data import insert_basic_data
 
 # 모든 모델 클래스 import
 from app.schema.models import Protein, Disease, ProteinDisease
-from app.schema.models import PredictProtein, ModelPredictionRun, PredictDisease
+from app.schema.models import InputProtein, ModelPredictionRun, PredictDisease
 
 async def check_tables_exist():
     """데이터베이스에 필요한 테이블들이 이미 존재하는지 확인합니다."""
     required_tables = ['protein', 'disease', 'protein_disease', 
-                        'predict_protein', 'model_prediction_run', 'predict_disease']
+                        'input_protein', 'model_prediction_run', 'predict_disease']
     
     async with engine.begin() as conn:
         # 데이터베이스에 존재하는 테이블 확인
@@ -56,6 +57,16 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+# CORS 미들웨어 설정 추가
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React 앱의 오리진 허용
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용 (GET, POST, PUT, DELETE 등)
+    allow_headers=["*"],  # 모든 HTTP 헤더 허용
+)
+
 app.include_router(proteins.router)
 
 @app.get("/")

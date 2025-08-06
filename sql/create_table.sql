@@ -26,8 +26,8 @@ CREATE TABLE protein_disease (
     FOREIGN KEY (disease_id) REFERENCES disease(disease_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 4. 예측된 단백질 테이블 (predict_protein)
-CREATE TABLE predict_protein (
+-- 4. 입력된 단백질 테이블 (input_protein)
+CREATE TABLE input_protein (
     run_id         INT NOT NULL,
     pp_rank           INT NOT NULL,
     sequence       VARCHAR(1000) NOT NULL,

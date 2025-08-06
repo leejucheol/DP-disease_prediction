@@ -5,4 +5,184 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 2rem;
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+}
+
+.loading-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border-left-color: #09f;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: #666;
+    font-size: 1.2rem;
+    text-align: center;
+    border-radius: 8px;
+    padding: 2rem;
+    width: 80%;
+}
+
+.result-container {
+    width: 90%;
+    border-radius: 8px;
+    padding: 2rem;
+}
+
+.result-container h2 {
+    color: #fff;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #fff;
+    padding-bottom: 0.5rem;
+}
+
+.sequence-info {
+    margin-bottom: 2rem;
+}
+
+.sequence-info h3 {
+    color: #fff;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.sequence-box {
+    background-color: #666;
+    padding: 1rem;
+    border-radius: 4px;
+    font-family: monospace;
+    position: relative;
+    word-break: break-all;
+    color: #fff;
+    font-weight: bold;
+}
+
+.sequence-length {
+    display: block;
+    color: #fff;
+    font-weight: 100;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.predictions-container h3 {
+    color: #fff;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.predictions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.prediction-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background-color: #666;
+    border-radius: 6px;
+    transition: transform 0.2s;
+    color: #fff;
+}
+
+.prediction-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.prediction-rank {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: 1rem;
+    font-weight: bold;
+}
+
+.prediction-item:nth-child(1) .prediction-rank {
+    background-color: #ffd700; /* 금색 */
+    color: #333;
+}
+
+.prediction-item:nth-child(2) .prediction-rank {
+    background-color: #c0c0c0; /* 은색 */
+    color: #333;
+}
+
+.prediction-item:nth-child(3) .prediction-rank {
+    background-color: #cd7f32; /* 동색 */
+    color: white;
+}
+
+.prediction-info {
+    flex: 1;
+}
+
+.prediction-info h4 {
+    margin: 0 0 0.3rem 0;
+    color: #fff;
+}
+
+.disease-id {
+    margin: 0;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+.prediction-probability {
+    width: 200px;
+    text-align: right;
+}
+
+.probability-bar {
+    height: 12px;
+    background-color: #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 0.3rem;
+}
+
+.probability-fill {
+    height: 100%;
+    background-color: #4caf50;
+    border-radius: 6px;
+}
+
+.prediction-item:nth-child(1) .probability-fill {
+    background-color: #ff6347; /* 첫 번째 항목은 빨간색 계열 */
+}
+
+.prediction-probability p {
+    margin: 0;
+    color: #fff;
+    font-weight: bold;
 }

@@ -82,7 +82,7 @@ uvicorn app.main:app --reload
     - 실행 파일: `app/models/gcn_v0_1_0.py`
     - 사용 모델: `esm2_t6_8M_UR50D` (ESM 모델)
     - 주요 함수: `sequence_to_graph_with_esm()`
-    - 동작: 단백질 시퀀스를 ESM(Evolutionary Scale Modeling) 모델에 입력해서 각 아미노산 서열의 임베딩 벡터를 얻는다.
+    - 동작: 단백질 시퀀스를 ESM(Evolutionary Scale Modeling) 모델을 통해 320차원 벡터로 임베딩된다. 각 아미노산 서열은 생물학적 특징이 압축된 고차원 포인트로 표현된다.
 
 2. **그래프 변환**:
 
@@ -130,6 +130,8 @@ uvicorn app.main:app --reload
 -   **ESM**: 단백질 시퀀스 임베딩 모델
 -   **MySQL**: 데이터베이스
 
-## 오류 처리
+## 처리해야 할 오류
 
-서버는 예측 과정에서 발생할 수 있는 오류를 처리하며, 오류 발생 시 데이터베이스 rollback을 수행하고 적절한 HTTP 오류 응답을 반환한다.
+-   post 요청 시에 protein 테이블에도 입력 sequence가 저장이 되는 경우
+-   모델 결과는 질병만 하기 때문에 predict_protein 테이블은 삭제
+-   post 요청 전 입력 sequence가 있는 지 확인 후 있다면 데이터를 insert 하는 것이 아닌 select로 보여줌.

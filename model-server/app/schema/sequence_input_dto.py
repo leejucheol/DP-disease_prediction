@@ -10,5 +10,5 @@ class DiseasePrediction(BaseModel):
     probability: float
 
 class DiseasePredictionResponse(BaseModel):
-    sequence: str  # 'protein' 대신 'sequence'로 변경
+    sequence: str  
     predictions: List[DiseasePrediction]

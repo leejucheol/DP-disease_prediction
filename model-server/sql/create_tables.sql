@@ -27,11 +27,11 @@ CREATE TABLE protein_disease (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 4. 예측된 단백질 테이블 (predict_protein)
-CREATE TABLE predict_protein (
+CREATE TABLE input_protein (
     run_id         INT NOT NULL,
-    `rank`         INT NOT NULL,
     sequence       TEXT NOT NULL,
-    PRIMARY KEY (run_id)
+    PRIMARY KEY (run_id),
+    FOREIGN KEY (run_id) REFERENCES model_prediction_run(run_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 5. 모델 예측 로그 테이블 (model_prediction_run)
@@ -47,9 +47,10 @@ CREATE TABLE model_prediction_run (
 CREATE TABLE predict_disease (
     run_id         INT NOT NULL,
     disease_name   VARCHAR(100) NOT NULL,
-    `rank`         INT NOT NULL,
+    pd_rank        INT NOT NULL,
+    probability    FLOAT NOT NULL,
     PRIMARY KEY (run_id),
-    FOREIGN KEY (run_id) REFERENCES predict_protein(run_id)
+    FOREIGN KEY (run_id) REFERENCES model_prediction_run(run_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
