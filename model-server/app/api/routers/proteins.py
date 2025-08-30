@@ -8,6 +8,8 @@ from app.models.gcn_v0_1_0 import (
 )
 import uuid
 from datetime import date
+from sqlalchemy import select
+from typing import List
 
 router = APIRouter(prefix="/proteins", tags=["proteins"])
 
@@ -87,3 +89,32 @@ async def predict_disease(
             status_code=500,
             detail=f"예측 중 오류 발생: {str(e)}",
         )
+
+@router.get("/diseases/{disease_id}/proteins", response_model=List[Protein])
+async def get_proteins_by_disease(
+    disease_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    질병 ID로 연관된 단백질 목록 반환
+    """
+    # PredictDisease에서 해당 질병의 run_id 추출
+    result = await db.execute(
+        select(PredictDisease.run_id).where(PredictDisease.disease_name == disease_id)
+    )
+    run_ids = [row[0] for row in result.fetchall()]
+    if not run_ids:
+        return []
+
+    # InputProtein에서 run_id로 단백질 시퀀스 조회
+    result = await db.execute(
+        select(InputProtein.sequence).where(InputProtein.run_id.in_(run_ids))
+    )
+    sequences = [row[0] for row in result.fetchall()]
+
+    # Protein 테이블에서 시퀀스 정보 조회
+    result = await db.execute(
+        select(Protein).where(Protein.sequence.in_(sequences))
+    )
+    proteins = [row[0] for row in result.fetchall()]
+    return proteins

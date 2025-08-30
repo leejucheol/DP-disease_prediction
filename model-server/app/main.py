@@ -1,17 +1,12 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # CORS 미들웨어 추가
 from contextlib import asynccontextmanager
 from app.databases.database_connect import Base, engine
-from app.routers import proteins
 from app.databases.insert_basic_data import insert_basic_data
-
-# 모든 모델 클래스 import
-from app.schema.models import Protein, Disease, ProteinDisease
-from app.schema.models import InputProtein, ModelPredictionRun, PredictDisease
+from app.api.routers import proteins
 
 async def check_tables_exist():
     """데이터베이스에 필요한 테이블들이 이미 존재하는지 확인합니다."""

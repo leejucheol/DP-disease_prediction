@@ -1,8 +1,6 @@
 import os
-from datetime import datetime
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base, relationship, declared_attr
-from sqlalchemy import Column, String, Text, Integer, Float, ForeignKey, TIMESTAMP, Table
+from sqlalchemy.orm import declarative_base
 from dotenv import load_dotenv
 
 # 1. 기본 베이스 클래스 설정 -------------------------------------------------

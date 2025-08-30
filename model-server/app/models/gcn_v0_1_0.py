@@ -2,11 +2,13 @@ import pandas as pd
 import torch
 import os
 from torch_geometric.data import Data
-from torch_geometric.nn import GCNConv
 import torch.nn.functional as F
-from sklearn.metrics import roc_auc_score, average_precision_score
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
 import esm
+from sklearn.model_selection import train_test_split
+from torch_geometric.loader import DataLoader
+from sklearn.preprocessing import MultiLabelBinarizer
+from torch_geometric.nn import GCNConv, global_mean_pool
+import torch.nn as nn
 
 # 1. 데이터 로드
 # 현재 파일의 경로를 기준으로 데이터 파일 경로 설정
@@ -55,7 +57,6 @@ def sequence_to_graph_with_esm(seq, esm_model, batch_converter, device):
     return Data(x=x, edge_index=edge_index)
 
 # uniprotid와 질병 아이디 그룹화 질병 아이디를 y로 두고
-from sklearn.preprocessing import MultiLabelBinarizer
 
 df = df.drop('UniProt_ID', axis=1)
 
@@ -70,8 +71,6 @@ def generate_labels(df):
     return label_map, mlb
 
 def build_graph_dataset_with_esm(df, esm_model, batch_converter, device):
-    from torch_geometric.data import Data
-    import numpy as np
 
     label_map, mlb = generate_labels(df)
     data_list = []
@@ -115,9 +114,6 @@ def build_graph_dataset_with_esm(df, esm_model, batch_converter, device):
 
     return data_list, mlb
 
-from sklearn.model_selection import train_test_split
-from torch_geometric.loader import DataLoader
-
 uids = df["sequence"].unique()
 train_ids, test_ids = train_test_split(uids, test_size=0.2, random_state=42)
 train_df = df[df["sequence"].isin(train_ids)].copy()
@@ -140,9 +136,6 @@ print(batch.y.shape)  # ✅ 반드시 (16, C) 나와야 정상
 ## 모델 정의
 """
 
-from torch_geometric.nn import GCNConv, global_mean_pool
-import torch.nn.functional as F
-
 class ProteinGCN(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels):
         super().__init__()
@@ -160,9 +153,6 @@ num_disease_classes = len(mlb.classes_)
 model = ProteinGCN(in_channels=320, hidden_channels=64, out_channels=num_disease_classes)
 
 print("질병 클래스 수:", num_disease_classes)
-
-from torch_geometric.loader import DataLoader
-import torch.nn as nn
 
 num_disease_classes = len(mlb.classes_)
 model = ProteinGCN(in_channels=320, hidden_channels=64, out_channels=num_disease_classes).to(device)
@@ -198,8 +188,6 @@ def train(model, loader, optimizer, criterion, device, epoch):
             print(f"❌ Batch {i+1} 실패: {e}")
 
     return total_loss / len(loader)
-
-from sklearn.metrics import f1_score
 
 # ✅ 평가 함수
 def evaluate(model, loader, device):
